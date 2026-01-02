@@ -1,0 +1,103 @@
+{
+    "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+    // "logo": {
+    //     "type": "small",
+    //     "color": {
+    //         "1": "blue",
+    //         "2": "blue"
+    //     },
+    //     "padding": {
+    //         "top": 3,
+    //         "left": 3
+    //     }
+    // },
+    "logo": {
+        "type": "file",
+        "source": "~/.config/fastfetch/logo.txt",
+        "padding": {
+            "top": 1,
+            "left": 1
+        },
+        "color": {
+            "1": "blue",
+            "2": "red",
+            "3": "cyan",
+            "4": "magenta"
+        }
+    },
+    "display": {
+        "separator": " ➜  ",
+        "color": {
+            "keys": "35",
+            "output": "37"
+        }
+    },
+    "modules": [
+        {
+            "type": "custom",
+            "format": "\u001b[36m----- ⚡ STATUS: CONNECTED -----\u001b[0m"
+        },
+        // {
+        //  "type": "title",
+        //  "key": "ユザ \u001b[36mUSER \u001b[0m",
+        //   "format": "{user-name}"
+        // },
+        {
+            "type": "kernel",
+            "key": "核芯 \u001b[36mOS\u001b[0m   ",
+            "format": "{release}"
+        },
+        {
+            "type": "uptime",
+            "key": "稼働 \u001b[36mUP\u001b[0m   "
+        },
+        // {
+        //  "type": "command",
+        //  "key": "年齡 \u001b[36mAGE\u001b[0m  ",
+        //   "text": "echo $(( ($(date +%s) - $(stat -c %W /)) / 86400 )) days"
+        // },
+        {
+            "type": "custom",
+            "format": "\u001b[90m--------------------------------\u001b[0m"
+        },
+        {
+            "type": "cpu",
+            "key": "処理 \u001b[36mCPU\u001b[0m  ",
+            "format": "{name}"
+        },
+        // {
+        //  "type": "gpu",
+        //  "key": "画像 \u001b[36mGPU\u001b[0m  ",
+        //   "format": "{name}"
+        // },
+        {
+            "type": "memory",
+            "key": "記憶 \u001b[36mMEM\u001b[0m  ",
+            "format": "{1} / {2}"
+        },
+        {
+            "type": "disk",
+            "key": "容量 \u001b[36mDSK\u001b[0m  ",
+            "folders": "/",
+            "format": "{1} / {2} "
+        },
+        {
+            "type": "custom",
+            "format": "\u001b[90m--------------------------------\u001b[0m"
+        },
+        {
+            "type": "colors",
+            "symbol": "circle",
+            "block": {
+                "range": [
+                    1,
+                    6
+                ]
+            },
+            "padding": {
+                "top": 4,
+                "left": 2
+            }
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+name: tokyo-night
+foreground: "#c0caf5"
+background: "#1a1b26"
+
+heading1: "#7aa2f7"
+heading2: "#9ece6a"
+heading3: "#e0af68"
+heading4: "#bb9af7"
+heading5: "#f7768e"
+heading6: "#2ac3de"
+
+quote: "#414868"
+hr: "#414868"
+link: "#7dcfff"
+code: "#7aa2f7"
+code_bg: "#24283b"
+emph: "#ff9e64"
+strong: "#ff9e64"
+list_marker: "#ff9e64"
+table_header: "#7aa2f7"
+table_border: "#414868"

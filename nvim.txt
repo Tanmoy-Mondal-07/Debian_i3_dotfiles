@@ -1,0 +1,52 @@
+local servers = {
+        gopls = {
+            settings = {
+                gopls = {
+                    analyses = {
+                        unusedparams = true,
+                        shadow = true,
+                    },
+                    staticcheck = true,
+                    gofumpt = true,
+                },
+            },
+        },
+
+local ensure_installed = vim.tbl_keys(servers or {})
+vim.list_extend(ensure_installed, {
+    "stylua",
+    "gopls",
+    "lua_ls", -- Used to format Lua code
+    })
+    require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
+
+    require("mason-lspconfig").setup({
+    ensure_installed = { "gopls", "lua_ls" }, -- explicitly set to an empty table (Kickstart populates installs via mason-tool-installer)
+    automatic_installation = false,
+    
+{ -- auto indent
+    "windwp/nvim-autopairs",
+    event = "InsertEnter",
+    config = true,
+},
+
+        --- @module 'blink.cmp'
+        --- @type blink.cmp.Config
+            opts = {
+            keymap = {
+                ["<CR>"] = { "accept", "fallback" },
+                ["<Tab>"] = { "select_next", "fallback" },
+                ["<S-Tab>"] = { "select_prev", "fallback" },
+
+
+
+
+
+isolation.tools.copy.disable = "FALSE"
+isolation.tools.paste.disable = "FALSE"
+isolation.tools.dnd.disable = "FALSE"
+isolation.tools.setGUIOptions.enable = "TRUE"
+usb:0.present = "TRUE"
+usb:0.deviceType = "hid"
+usb:0.port = "0"
+usb:0.parent = "-1"
