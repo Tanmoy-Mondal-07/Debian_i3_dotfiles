@@ -1,10 +1,10 @@
 //"/usr/share/sddm/themes/jp/Main.qml"
 
-import QtQuick 2.15
-import QtQuick.Layouts 1.15
-import QtQuick.Controls 2.15
-// import QtQuick.Effects 2.13
-import QtGraphicalEffects 1.15
+import QtQuick
+import QtQuick.Layouts
+import QtQuick.Controls
+import QtQuick.Effects
+import QtGraphicalEffects
 
 import "Components"
 

@@ -5,7 +5,7 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.o`
@@ -112,6 +112,7 @@ vim.keymap.set("n", "<C-h>", "<C-w><C-h>", { desc = "Move focus to the left wind
 vim.keymap.set("n", "<C-l>", "<C-w><C-l>", { desc = "Move focus to the right window" })
 vim.keymap.set("n", "<C-j>", "<C-w><C-j>", { desc = "Move focus to the lower window" })
 vim.keymap.set("n", "<C-k>", "<C-w><C-k>", { desc = "Move focus to the upper window" })
+-- vim.keymap.set({ "n", "i", "v" }, "<C-s>", "<Esc>:wa<CR>", { silent = true })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -599,6 +600,8 @@ require("lazy").setup({
 				gopls = {
 					settings = {
 						gopls = {
+							completeUnimported = true,
+							usePlaceholders = true,
 							analyses = {
 								unusedparams = true,
 								shadow = true,
@@ -922,6 +925,53 @@ require("lazy").setup({
 		},
 		config = function(_, opts)
 			require("nvim-treesitter.configs").setup(opts)
+		end,
+	},
+
+	{
+		"nvim-neo-tree/neo-tree.nvim",
+		branch = "v3.x",
+		dependencies = {
+			"nvim-lua/plenary.nvim",
+			"nvim-tree/nvim-web-devicons",
+			"MunifTanjim/nui.nvim",
+		},
+		config = function()
+			vim.keymap.set("n", "<C-n>", ":Neotree toggle<CR>", {})
+		end,
+	},
+
+	{
+		"goolord/alpha-nvim",
+		dependencies = {
+			"nvim-tree/nvim-web-devicons",
+		},
+
+		config = function()
+			local alpha = require("alpha")
+			local dashboard = require("alpha.themes.startify")
+			vim.api.nvim_set_hl(0, "AlphaHeader", {
+				fg = "#e0af68", -- TokioNight blue
+				bold = true,
+			})
+			dashboard.section.header.val = {
+				[[                                                                       ]],
+				[[                                                                       ]],
+				[[                                                                     ]],
+				[[       ████ ██████           █████      ██                     ]],
+				[[      ███████████             █████                             ]],
+				[[      █████████ ███████████████████ ███   ███████████   ]],
+				[[     █████████  ███    █████████████ █████ ██████████████   ]],
+				[[    █████████ ██████████ █████████ █████ █████ ████ █████   ]],
+				[[  ███████████ ███    ███ █████████ █████ █████ ████ █████  ]],
+				[[ ██████  █████████████████████ ████ █████ █████ ████ ██████ ]],
+				[[                                                                       ]],
+				[[                                                                       ]],
+				[[                                                                       ]],
+			}
+
+			dashboard.section.header.opts.hl = "AlphaHeader"
+			alpha.setup(dashboard.opts)
 		end,
 	},
 
