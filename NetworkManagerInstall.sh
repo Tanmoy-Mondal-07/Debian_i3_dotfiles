@@ -1,4 +1,4 @@
-sudo apt install NetworkManager
+sudo apt install network-manager -y
 sudo systemctl enable NetworkManager
 sudo systemctl start NetworkManager
 
