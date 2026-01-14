@@ -1,154 +1,136 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# --- Configuration ---
-ENABLED_COLOR="#A3BE8C"
-DISABLED_COLOR="#D35F5E"
-SIGNAL_ICONS=("󰤟 " "󰤢 " "󰤥 " "󰤨 ")
-SECURED_SIGNAL_ICONS=("󰤡 " "󰤤 " "󰤧 " "󰤪 ")
-WIFI_ICON=" "
-ETH_ICON="󰈀"
-CONNECTED_ICON=" "
+# --- Configuration & Theming ---
+# (Matches your Powermenu style)
+uptime_info=$(uptime -p | sed -e 's/up //g')
+host=$(hostnamectl hostname)
+WLAN_INT=$(nmcli -t -f DEVICE,TYPE device | grep ":wifi" | cut -d: -f1 | head -n1)
 
-# Detect Environment
-SESSION_TYPE="${XDG_SESSION_TYPE:-x11}"
+# Main Menu Options
+options=("Wi-Fi" "Ethernet" "Hotspot" "Scan")
+icons=("󰖩" "󰈀" "󱄉" "󰑓")
 
 # --- Helper Functions ---
 
-# Get the name of the wifi and ethernet interfaces dynamically
-WLAN_INT=$(nmcli -t -f DEVICE,TYPE device | grep ":wifi" | cut -d: -f1 | head -n1)
-ETH_INT=$(nmcli -t -f DEVICE,TYPE device | grep ":ethernet" | cut -d: -f1 | head -n1)
+notify() {
+    notify-send -u low -t 3000 "Network Manager" "$1"
+}
 
-get_status() {
-    local status_icon=$WIFI_ICON
-    local status_color=$DISABLED_COLOR
+rofi_cmd() {
+    local prompt=$1
+    local mesg=$2
+    local list=$3
+    echo -e "$list" | rofi -dmenu -i -p "$prompt" -mesg "$mesg" \
+        -theme-str 'window {width: 800px; height: 500px;} listview {columns: 2; lines: 3;}'
+}
 
-    if nmcli -t -f TYPE,STATE device status | grep -q 'ethernet:connected'; then
-        status_icon=$ETH_ICON
-        status_color=$ENABLED_COLOR
-    elif nmcli -t -f TYPE,STATE device status | grep -q 'wifi:connected'; then
-        local wifi_info=$(nmcli --terse --fields "SIGNAL,SECURITY" device wifi list --rescan no | grep '^\*' | head -n1)
-        if [ -n "$wifi_info" ]; then
-            IFS=: read -r in_use signal security <<< "$wifi_info"
-            local level=$(( signal / 25 ))
-            [ $level -gt 3 ] && level=3
-            
-            if [[ "$security" =~ "WPA" || "$security" =~ "WEP" ]]; then
-                status_icon="${SECURED_SIGNAL_ICONS[$level]}"
-            else
-                status_icon="${SIGNAL_ICONS[$level]}"
-            fi
-            status_color=$ENABLED_COLOR
-        fi
-    fi
-
-    if [[ "$SESSION_TYPE" == "wayland" ]]; then
-        echo "<span color=\"$status_color\">$status_icon</span>"
+# --- Hotspot Logic ---
+manage_hotspot() {
+    local active_hotspot=$(nmcli -t -f CONNECTION device show "$WLAN_INT" | grep "GENERAL.CONNECTION" | cut -d: -f2)
+    # Check if the current connection is a hotspot type
+    if nmcli -t -f connection.type connection show "$active_hotspot" 2>/dev/null | grep -q "802-11-access-point"; then
+        nmcli connection down id "$active_hotspot" && notify "Hotspot Deactivated"
     else
-        echo "%{F$status_color}$status_icon%{F-}"
+        # Create/Up a basic hotspot named 'MyHotspot' if it doesn't exist
+        if ! nmcli connection show "MyHotspot" &>/dev/null; then
+            nmcli device wifi hotspot ssid "MyHotspot" password "12345678"
+        else
+            nmcli connection up id "MyHotspot"
+        fi
+        notify "Hotspot 'MyHotspot' Activated"
     fi
 }
 
+# --- Wi-Fi Management ---
 manage_wifi() {
-    # Get list of networks
-    local wifi_list=$(nmcli --terse --fields "IN-USE,SIGNAL,SECURITY,SSID" device wifi list --rescan yes)
+    # 1. Get the list of SSIDs
+    local wifi_list=$(nmcli --terse --fields "IN-USE,SIGNAL,SSID" device wifi list --rescan yes)
     local formatted_list=""
-    
-    while IFS=: read -r in_use signal security ssid; do
+    local active_ssid=""
+
+    while IFS=: read -r in_use signal ssid; do
         [ -z "$ssid" ] && continue
-        
-        local level=$(( signal / 25 )); [ $level -gt 3 ] && level=3
-        local icon="${SIGNAL_ICONS[$level]}"
-        [[ "$security" =~ "WPA" || "$security" =~ "WEP" ]] && icon="${SECURED_SIGNAL_ICONS[$level]}"
-        
-        local prefix=""
-        [[ "$in_use" == "*" ]] && prefix="$CONNECTED_ICON "
-        
-        formatted_list+="$prefix$icon $ssid\n"
+        if [[ "$in_use" == "*" ]]; then
+            active_ssid="$ssid"
+            formatted_list="󰄬 $ssid (Connected)\n$formatted_list"
+        else
+            formatted_list+="$ssid\n"
+        fi
     done <<< "$wifi_list"
 
-    local chosen=$(echo -e "$formatted_list" | rofi -dmenu -i -p "Wi-Fi: " -markup-rows)
-    [ -z "$chosen" ] && return
+    local chosen_ssid=$(echo -e "$formatted_list" | rofi -dmenu -i -p "Select Network")
+    [ -z "$chosen_ssid" ] && return
 
-    # Extract SSID (strip the icon and prefix)
-    local chosen_ssid=$(echo "$chosen" | sed "s/^$CONNECTED_ICON //" | awk '{print $2}')
-    
-    # Action Menu
-    local is_active=$(echo "$chosen" | grep "$CONNECTED_ICON")
-    local action=$(echo -e "󰸋 Connect\n Disconnect\n Forget" | rofi -dmenu -p "Action for $chosen_ssid: ")
+    # Clean the string (remove icon and 'Connected' text)
+    chosen_ssid=$(echo "$chosen_ssid" | sed 's/󰄬 //' | sed 's/ (Connected)//')
 
-    case $action in
+    # 2. Contextual Actions based on connection status
+    local actions=""
+    if [[ "$chosen_ssid" == "$active_ssid" ]]; then
+        actions="󰈂 Disconnect\n Forget"
+    else
+        actions="󰄄 Connect\n Forget"
+    fi
+
+    local selected_action=$(echo -e "$actions" | rofi -dmenu -i -p "Action: $chosen_ssid")
+
+    case "$selected_action" in
         *"Connect")
             if nmcli -g NAME connection show | grep -Fxq "$chosen_ssid"; then
-                nmcli connection up id "$chosen_ssid"
+                nmcli connection up id "$chosen_ssid" --wait 10 || notify "Connection Failed"
             else
                 local pass=$(rofi -dmenu -p "Password: " -password)
-                nmcli device wifi connect "$chosen_ssid" password "$pass"
+                nmcli device wifi connect "$chosen_ssid" password "$pass" || notify "Wrong Password"
             fi
             ;;
         *"Disconnect")
-            nmcli device disconnect "$WLAN_INT"
+            nmcli device disconnect "$WLAN_INT" && notify "Disconnected from $chosen_ssid"
             ;;
         *"Forget")
-            nmcli connection delete id "$chosen_ssid"
+            nmcli connection delete id "$chosen_ssid" && notify "Forgotten $chosen_ssid"
             ;;
     esac
 }
 
-manage_ethernet() {
-    if [ -z "$ETH_INT" ]; then
-        notify-send "Network" "No Ethernet device found."
-        return
-    fi
-    
-    local state=$(nmcli -t -f STATE device show "$ETH_INT" | grep STATE | cut -d: -f2 | awk '{print $1}')
-    local action_prompt="Connect Ethernet"
-    [[ "$state" == "connected" ]] && action_prompt="Disconnect Ethernet"
-
-    local action=$(echo -e "$action_prompt\nCancel" | rofi -dmenu -i -p "Ethernet: ")
-    
-    if [[ "$action" == "Connect Ethernet" ]]; then
-        nmcli device connect "$ETH_INT"
-    elif [[ "$action" == "Disconnect Ethernet" ]]; then
-        nmcli device disconnect "$ETH_INT"
-    fi
-}
-
 # --- Main Logic ---
 
-# Check dependencies
-for cmd in nmcli rofi; do
-    if ! command -v $cmd &> /dev/null; then
-        notify-send "Error" "$cmd is not installed."
-        exit 1
-    fi
+# Create the main menu string with icons
+main_menu_string=""
+for ((i = 0; i < ${#options[@]}; i++)); do
+    main_menu_string+="${icons[$i]} ${options[$i]}\n"
 done
 
-# Handle arguments
-case "$1" in
-    --status) get_status; exit 0 ;;
-esac
+chosen_main=$(echo -ne "$main_menu_string" | rofi -dmenu -i \
+    -p " $USER@$host" \
+    -mesg " Uptime: $uptime_info" \
+    -theme-str 'window {width: 700px; height: 350px;} listview {columns: 2; lines: 2;}')
 
-# Check if NetworkManager is running
-if ! pgrep -x "NetworkManager" > /dev/null; then
-    pkexec systemctl start NetworkManager
-fi
-
-# Main Menu
-WIFI_ENABLED=$(nmcli radio wifi)
-W_TOGGLE="󱚽 Enable Wi-Fi"
-[[ "$WIFI_ENABLED" == "enabled" ]] && W_TOGGLE="󱛅 Disable Wi-Fi"
-
-CHOSEN=$(echo -e "$W_TOGGLE\n󱓥 Manage Wi-Fi\n󱓥 Manage Ethernet" | rofi -dmenu -p "Network:")
-
-case "$CHOSEN" in
+case "$chosen_main" in
     *"Wi-Fi")
-        if [[ "$CHOSEN" == *"Manage"* ]]; then
-            manage_wifi
+        # Toggle Wi-Fi Power
+        current_status=$(nmcli radio wifi)
+        if [[ "$current_status" == "enabled" ]]; then
+            nmcli radio wifi off && notify "Wi-Fi Disabled"
         else
-            nmcli radio wifi $([[ "$WIFI_ENABLED" == "enabled" ]] && echo "off" || echo "on")
+            nmcli radio wifi on && notify "Wi-Fi Enabled"
         fi
         ;;
+    *"Scan"|*"Manage Wi-Fi")
+        manage_wifi
+        ;;
     *"Ethernet")
-        manage_ethernet
+        # Simple toggle for the first ethernet device found
+        ETH_INT=$(nmcli -t -f DEVICE,TYPE device | grep ":ethernet" | cut -d: -f1 | head -n1)
+        if [ -n "$ETH_INT" ]; then
+            state=$(nmcli device status | grep "$ETH_INT" | awk '{print $3}')
+            if [[ "$state" == "connected" ]]; then
+                nmcli device disconnect "$ETH_INT" && notify "Ethernet Disconnected"
+            else
+                nmcli device connect "$ETH_INT" && notify "Ethernet Connected"
+            fi
+        fi
+        ;;
+    *"Hotspot")
+        manage_hotspot
         ;;
 esac
