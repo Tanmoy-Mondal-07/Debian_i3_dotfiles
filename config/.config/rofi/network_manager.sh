@@ -13,7 +13,8 @@ icons=("󰖩" "󰈀" "󱄉" "󰑓")
 # --- Helper Functions ---
 
 notify() {
-    notify-send -u low -t 3000 "Network Manager" "$1"
+    # notify-send -u low -t 3000 
+    echo "Network Manager" "$1"
 }
 
 rofi_cmd() {
