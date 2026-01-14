@@ -6,7 +6,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 sudo apt update
 sudo apt install -y --no-install-recommends \
   i3 lightdm rofi glow polybar alacritty fastfetch \
-  network-manager curl unzip fontconfig fzf fdfind neovim
+  network-manager curl unzip fontconfig fzf fdfind neovim tmux
 
 # Fonts
 sudo apt purge -y fonts-jetbrains-mono || true
